@@ -10,6 +10,5 @@ coverage/
 *.iml
 
 # Ignore top-level project folders so they can be added one by one later.
-/SpotifyAPI/
 /SSLCommerz-NodeJS-master/
 /WeatherApp/
