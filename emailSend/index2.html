@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Send Gap Analysis via EmailJS</title>
+    <script type="module">
+        import emailjs from 'https://cdn.jsdelivr.net/npm/@emailjs/browser@3.11.0/+esm';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('contact-form');
+
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                try {
+                    const analysisData = await fetch('./gap_analysis_8c7c4590_7810_4964_8c5f_e0abb8dfa68a_1753597742.json')
+                        .then(res => res.json());
+
+                    const clean = (value) => {
+                        if (!value) return '';
+                        return String(value)
+                            .replace(/[{}]/g, '')
+                            .replace(/\\/g, '')
+                            .replace(/"/g, '')
+                            .replace(/'/g, '')
+                            .replace(/\n/g, ' ')
+                            .replace(/\r/g, ' ')
+                            .replace(/\t/g, ' ')
+                            .trim();
+                    };
+
+                    const formattedGaps = (analysisData.validated_gaps || []).map((gap, index) => `
+            <h4>🔹 Gap ${index + 1}: ${clean(gap.gap_title || 'Untitled')}</h4>
+            <ul>
+              <li><strong>Description:</strong> ${clean(gap.description)}</li>
+              <li><strong>Category:</strong> ${clean(gap.category)}</li>
+              <li><strong>Source Paper:</strong> <a href="${clean(gap.source_paper)}">${clean(gap.source_paper_title)}</a></li>
+              <li><strong>Validation Evidence:</strong> ${clean(gap.validation_evidence)}</li>
+              <li><strong>Potential Impact:</strong> ${clean(gap.potential_impact)}</li>
+              <li><strong>Difficulty Score:</strong> ${clean(gap.gap_metrics?.difficulty_score)}/10</li>
+              <li><strong>Innovation Potential:</strong> ${clean(gap.gap_metrics?.innovation_potential)}/10</li>
+              <li><strong>Commercial Viability:</strong> ${clean(gap.gap_metrics?.commercial_viability)}/10</li>
+              <li><strong>Time to Solution:</strong> ${clean(gap.gap_metrics?.time_to_solution)}</li>
+              <li><strong>Funding Likelihood:</strong> ${clean(gap.gap_metrics?.funding_likelihood)}%</li>
+              <li><strong>Collaboration Score:</strong> ${clean(gap.gap_metrics?.collaboration_score)}/10</li>
+              <li><strong>Ethical Considerations:</strong> ${clean(gap.gap_metrics?.ethical_considerations)}/10</li>
+              <li><strong>Confidence Score:</strong> ${clean(gap.confidence_score)}%</li>
+              <li><strong>Validation Attempts:</strong> ${clean(gap.validation_attempts)}</li>
+              <li><strong>Papers Checked Against:</strong> ${clean(gap.papers_checked_against)}</li>
+              <li><strong>Estimated Researcher Years:</strong> ${clean(gap.estimated_researcher_years)}</li>
+              <li><strong>Recommended Team Size:</strong> ${clean(gap.recommended_team_size)}</li>
+            </ul>
+            
+            <h5>💡 Suggested Approaches:</h5>
+            <ul>
+              ${(gap.suggested_approaches || []).map(approach => `<li>${clean(approach)}</li>`).join('')}
+            </ul>
+            
+            <h5>🎯 Key Milestones:</h5>
+            <ul>
+              ${(gap.key_milestones || []).map(milestone => `<li>${clean(milestone)}</li>`).join('')}
+            </ul>
+            
+            <h5>📊 Success Metrics:</h5>
+            <ul>
+              ${(gap.success_metrics || []).map(metric => `<li>${clean(metric)}</li>`).join('')}
+            </ul>
+            
+            <h5>🏷️ Opportunity Tags:</h5>
+            <ul>
+              ${(gap.opportunity_tags || []).map(tag => `<li>${clean(tag)}</li>`).join('')}
+            </ul>
+            
+            <h5>🔗 Interdisciplinary Connections:</h5>
+            <ul>
+              ${(gap.interdisciplinary_connections || []).map(connection => `<li>${clean(connection)}</li>`).join('')}
+            </ul>
+            
+            <h5>🏭 Industry Relevance:</h5>
+            <ul>
+              ${(gap.industry_relevance || []).map(industry => `<li>${clean(industry)}</li>`).join('')}
+            </ul>
+          `).join('<hr/>');
+
+                    const templateParams = {
+                        user_name: form.user_name.value,
+                        user_email: form.user_email.value,
+                        to_email: form.user_email.value,  // 🔥 This ensures recipient is set!
+                        message: clean(form.message.value || 'No message'),
+
+                        request_id: clean(analysisData.request_id),
+                        analysis_date: clean(analysisData.timestamp),
+                        seed_paper_url: clean(analysisData.seed_paper_url),
+                        total_papers: clean(analysisData.process_metadata?.total_papers_analyzed),
+                        processing_time: Math.round((analysisData.process_metadata?.processing_time_seconds || 0) / 60),
+                        gaps_count: (analysisData.validated_gaps || []).length,
+                        gap_details_html: formattedGaps,
+
+                        frontier_overview: clean(analysisData.executive_summary?.frontier_overview),
+                        risk_assessment: clean(analysisData.executive_summary?.risk_assessment),
+
+                        reply_to: form.user_email.value
+                    };
+
+                    emailjs.send(
+                        'service_1fprxk7',
+                        'template_4bd8vho',
+                        templateParams,
+                        'UIJeF9ozej1og_X2m'
+                    ).then(() => {
+                        alert('✅ Email sent successfully!');
+                        form.reset();
+                    }).catch((error) => {
+                        console.error('❌ EmailJS send failed:', error);
+                        alert('❌ Failed to send email: ' + (error?.text || error?.message || 'Unknown error'));
+                    });
+                } catch (err) {
+                    console.error('❌ Failed:', err);
+                    alert('Failed to send: ' + err.message);
+                }
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <h2>📨 Send Your Gap Analysis</h2>
+    <form id="contact-form">
+        <input type="text" name="user_name" placeholder="Your Name" required /><br />
+        <input type="email" name="user_email" placeholder="Your Email" required /><br />
+        <textarea name="message" placeholder="Any message to include..." required></textarea><br />
+        <button type="submit">Send Analysis</button>
+    </form>
+</body>
+
+</html>

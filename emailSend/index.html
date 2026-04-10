@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Send Gap Analysis via EmailJS</title>
+  <script type="module">
+    import emailjs from 'https://cdn.jsdelivr.net/npm/@emailjs/browser@3.11.0/+esm';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('contact-form');
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const analysisData = await fetch('./gap_analysis_8c7c4590_7810_4964_8c5f_e0abb8dfa68a_1753597742.json')
+          .then(res => res.json())
+          .catch(err => {
+            alert('Failed to load analysis data');
+            return;
+          });
+
+        // Clean helper
+        const cleanText = (text) => {
+          if (typeof text !== 'string') return String(text || '');
+          return text
+            .replace(/[{}]/g, '')
+            .replace(/\\/g, '')
+            .replace(/["']/g, '')
+            .replace(/[\n\r\t]/g, ' ')
+            .substring(0, 500);
+        };
+
+        // Gap titles list
+        const gapTitles = (analysisData.validated_gaps || []).map((gap, index) => 
+          `${index + 1}. ${cleanText(gap.gap_title || 'Untitled Gap')}`
+        ).join('\n');
+
+        const templateParams = {
+          user_name: form.user_name.value,
+          user_email: form.user_email.value,
+          to_email: form.user_email.value,  // ✅ KEY FIX
+          message: form.message.value,
+
+          request_id: cleanText(analysisData.request_id),
+          seed_paper_url: cleanText(analysisData.seed_paper_url),
+          analysis_date: cleanText(analysisData.timestamp),
+
+          gaps_count: analysisData.validated_gaps?.length || 0,
+          gap_titles: gapTitles,
+
+          total_papers: analysisData.process_metadata?.total_papers_analyzed || 0,
+          processing_time: Math.round((analysisData.process_metadata?.processing_time_seconds || 0) / 60),
+
+          frontier_overview: cleanText(analysisData.executive_summary?.frontier_overview),
+          risk_assessment: cleanText(analysisData.executive_summary?.risk_assessment)
+        };
+
+        emailjs.send(
+          'service_1fprxk7',
+          'template_1nv89px',
+          templateParams,
+          'UIJeF9ozej1og_X2m'
+        ).then(() => {
+          alert('✅ Email sent successfully!');
+          form.reset();
+        }, (error) => {
+          console.error('❌ Failed to send email:', error);
+          alert('Failed to send: ' + error.text);
+        });
+      });
+    });
+  </script>
+</head>
+<body>
+  <h2>📨 Send Your Gap Analysis</h2>
+  <form id="contact-form">
+    <input type="text" name="user_name" placeholder="Your Name" required /><br/>
+    <input type="email" name="user_email" placeholder="Your Email" required /><br/>
+    <textarea name="message" placeholder="Any message to include..." required></textarea><br/>
+    <button type="submit">Send Analysis</button>
+  </form>
+</body>
+</html>
